@@ -1,24 +1,40 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { injectGlobal } from '@emotion/css';
+import { RealmAppProvider, useRealmApp } from "./RealmApp";
+import { MsalProvider } from "@azure/msal-react";
+import { PublicClientApplication } from "@azure/msal-browser";
+import axios from "axios";
+
+import LoginScreen from "./Pages/LoginScreen";
+import HelloApp from "./Pages/HelloApp";
+import { msalConfig } from "./lib/authConfig";
+
+injectGlobal(`
+  *, *:before, *:after {
+    box-sizing: border-box;
+  }
+`);
+
+const APP_ID = process.env.REACT_APP_REALMAPP;
+const msalInstance = new PublicClientApplication(msalConfig);
+
+const RequireLoggedInUser = ({ children }) => {
+  // Only render children if there is a logged in user.
+  const app = useRealmApp();
+  return app.currentUser ? children : <LoginScreen />;
+};
+
 
 function App() {
+  axios.defaults.baseURL = `https://eu-central-1.aws.data.mongodb-api.com/app/${APP_ID}/endpoint`;
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <RealmAppProvider appId={APP_ID}>
+      <MsalProvider instance={msalInstance}>
+        <RequireLoggedInUser>
+          <HelloApp />
+        </RequireLoggedInUser>
+      </MsalProvider>
+    </RealmAppProvider>      
   );
 }
 
